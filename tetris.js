@@ -12,8 +12,8 @@ var ROWS = 20; //number of rows
 var SQUARE_SIZE = 40;
 var SPAWN = [0, 5]; //row 0, col 5
 var grid = []; //grid array
-
-var Pieces = [
+var speed; //piece fall speed
+var pieces = [
     //[row,col]
     [[1, -1], [1, 0], [2, -1], [2, 0]], // O Piece
     [[1, -2], [1, -1], [1, 0], [1, 1]], // I Piece
@@ -24,7 +24,47 @@ var Pieces = [
     [[1, 0], [1, -1], [1, 1], [2, 0]] // T Piece
 ]
 
-var colors = ["#ffff00", "#00bfff", "#ff4000", "#80ff00", "#ffbf00", "#0000ff", "#8000ff"];
+var OPiece = [
+    [[1, -1], [1, 0], [2, -1], [2, 0]]
+]
+
+var IPiece = [
+    [[1, -2], [1, -1], [1, 0], [1, 1]],
+    [[0, 0], [1, 0], [2, 0], [3, 0]]
+]
+
+var SPiece = [
+    [[1, 0], [1, 1], [2, 0], [2, -1]],
+    [[1, 0], [0, 0], [1, 1], [2, 1]]
+]
+
+var ZPiece = [
+    [[1, 0], [1, -1], [2, 0], [2, 1]],
+    [[1, 0], [0, 1], [2, 0], [1, 1]]
+]
+
+var LPiece = [
+    [[1, 0], [1, -1], [1, 1], [2, -1]],
+    [[1, 0], [0, 0], [2, 0], [2, 1]],
+    [[1, 0], [1, -1], [1, 1], [0, 1]],
+    [[1, 0], [2, 0], [0, -1], [0, 0]]
+]
+
+var JPiece = [
+    [[1, 0], [1, -1], [1, 1], [2, 1]],
+    [[1, 0], [2, 0], [0, 0], [0, 1]],
+    [[1, 0], [0, -1], [1, -1], [1, 1]],
+    [[1, 0], [2, -1], [2, 0], [0, 0]]
+]
+
+var TPiece = [
+    [[1, 0], [1, -1], [1, 1], [2, 0]],
+    [[1, 0], [0, 0], [1, 1], [2, 0]],
+    [[1, 0], [1, -1], [1, 1], [0, 0]],
+    [[1, 0], [0, 0], [1, -1], [2, 0]]
+]
+
+var colors = ["#ffff00", "#00bfff", "#80ff00", "#ff4000", "#ffbf00", "#0000ff", "#8000ff"];
 
 
 class Piece {
@@ -35,8 +75,8 @@ class Piece {
 }
 
 function spawnRandomPiece() {
-    var rand = Math.floor(Math.random() * 6);
-    drawPiece(Pieces[rand], SPAWN, colors[rand]);
+    var rand = Math.floor(Math.random() * (pieces.length));
+    drawPiece(pieces[rand], SPAWN, colors[rand]);
 }
 
 function drawPiece(piece, location, color) {
@@ -85,5 +125,5 @@ function play() {
 function setup() {
     initGrid();
     play();
-    
+
 }
