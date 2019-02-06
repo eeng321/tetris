@@ -10,20 +10,11 @@ var EMPTY = 0; //empty square
 var COLS = 10; //number of columns
 var ROWS = 20; //number of rows
 var SQUARE_SIZE = 40;
-var SPAWN = [0, 5]; //row 0, col 5
 var grid = []; //grid array
 var speed; //piece fall speed
-var pieces = [
-    //[row,col]
-    [[1, -1], [1, 0], [2, -1], [2, 0]], // O Piece
-    [[1, -2], [1, -1], [1, 0], [1, 1]], // I Piece
-    [[1, 0], [1, 1], [2, 0], [2, -1]], // S Piece
-    [[1, 0], [1, -1], [2, 0], [2, 1]], // Z Piece
-    [[1, 0], [1, -1], [1, 1], [2, -1]], // L Piece
-    [[1, 0], [1, -1], [1, 1], [2, 1]], // J Piece
-    [[1, 0], [1, -1], [1, 1], [2, 0]] // T Piece
-]
+var active; //active piece
 
+//row, col
 var OPiece = [
     [[1, -1], [1, 0], [2, -1], [2, 0]]
 ]
@@ -64,26 +55,40 @@ var TPiece = [
     [[1, 0], [0, 0], [1, -1], [2, 0]]
 ]
 
+var pieces = [
+    OPiece, IPiece, SPiece, ZPiece, LPiece, JPiece, TPiece
+]
+
 var colors = ["#ffff00", "#00bfff", "#80ff00", "#ff4000", "#ffbf00", "#0000ff", "#8000ff"];
 
 
 class Piece {
-    constructor(piece, o) {
-        this.piece = piece;
+    constructor(piece, o, color) {
+        this.type = piece;
         this.orientation = o;
+        this.color = color;
+        this.isFalling = true;
+        this.isActive = true;
     }
 }
 
 function spawnRandomPiece() {
     var rand = Math.floor(Math.random() * (pieces.length));
-    drawPiece(pieces[rand], SPAWN, colors[rand]);
+    var type = pieces[rand]; //piece type
+    var o = Math.floor(Math.random() * type.length); //orientation
+    var rp = new Piece(type, o, colors[rand]); //random piece
+    active = rp;
+    //var col = Math.floor(Math.random() * COLS);
+    var spawn = [0, 5]; //row,col
+    drawPiece(rp, spawn); //spawn base orientation of a random piece at start location
 }
 
-function drawPiece(piece, location, color) {
-    for (var i = 0; i < piece.length; i++) {
-        drawSquare(piece[i], location, color);
+//piece object, draw location, color of piece
+function drawPiece(piece, location) {
+    var p = piece.type[piece.orientation];
+    for (var i = 0; i < p.length; i++) {
+        drawSquare(p[i], location, piece.color);
     }
-
 }
 
 function drawSquare(piece, loc, color) {
@@ -94,7 +99,9 @@ function drawSquare(piece, loc, color) {
     g.stroke();
 }
 
-
+function fallingPiece(){
+    console.log("excuting fall");
+}
 
 function drawGrid(r, c) {
     g.beginPath();
@@ -120,10 +127,13 @@ function initGrid() {
 
 function play() {
     spawnRandomPiece();
+    console.log(active);
+    // while(active.isFalling && active.isActive){
+    //     setInterval(fallingPiece(), 500);
+    // }
 }
 
 function setup() {
     initGrid();
     play();
-
 }
