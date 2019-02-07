@@ -1,18 +1,21 @@
-var canvas = document.getElementById("canvas")
+var canvas = document.getElementById("canvas"); //current view
 
 var GRID_WIDTH = 400;
 var GRID_HEIGHT = 800;
 canvas.width = GRID_WIDTH;
 canvas.height = GRID_HEIGHT;
-var g = canvas.getContext("2d");
 
-var EMPTY = 0; //empty square
+var g = canvas.getContext("2d");
+var gNext = canvas.getContext("2d");
+
+var EMPTY = -1; //empty square
 var COLS = 10; //number of columns
 var ROWS = 20; //number of rows
 var SQUARE_SIZE = 40;
 var grid = []; //grid array
 var speed; //piece fall speed
 var active; //active piece
+var next; //next active piece
 
 //row, col
 var OPiece = [
@@ -76,31 +79,54 @@ function spawnRandomPiece() {
     var rand = Math.floor(Math.random() * (pieces.length));
     var type = pieces[rand]; //piece type
     var o = Math.floor(Math.random() * type.length); //orientation
-    var rp = new Piece(type, o, colors[rand]); //random piece
+    var rp = new Piece(type, o, rand); //random piece
     active = rp;
     //var col = Math.floor(Math.random() * COLS);
     var spawn = [0, 5]; //row,col
     drawPiece(rp, spawn); //spawn base orientation of a random piece at start location
 }
 
-//piece object, draw location, color of piece
 function drawPiece(piece, location) {
     var p = piece.type[piece.orientation];
     for (var i = 0; i < p.length; i++) {
-        drawSquare(p[i], location, piece.color);
+        p[i][0] += location[0]; //compute row location
+        p[i][1] += location[1]; //compute col location
+        mapSquare(p[i], piece.color);
     }
 }
 
-function drawSquare(piece, loc, color) {
-    g.fillStyle = color;
-    g.fillRect((piece[1] + loc[1]) * SQUARE_SIZE, (piece[0] + loc[0]) * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+//loc = [row,col] array index
+function mapSquare(loc, color) {
+    grid[loc[0]][loc[1]] = color;
+}
+
+function drawBoardState() {
+    for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+            if (grid[r][c] >= 0) {
+                drawSquare(r,c);
+            }
+        }
+    }
+}
+
+function drawSquare(r, c) {
+    g.fillStyle = colors[grid[r][c]];
+    g.fillRect(c * SQUARE_SIZE, r * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
     g.lineWidth = "1";
-    g.rect((piece[1] + loc[1]) * SQUARE_SIZE, (piece[0] + loc[0]) * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+    g.rect(c * SQUARE_SIZE, r * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
     g.stroke();
 }
 
-function fallingPiece(){
-    console.log("excuting fall");
+
+function fallingPiece() {
+    console.log(active);
+    
+}
+
+function refresh(){
+    g = gNext;
+    g.stroke();
 }
 
 function drawGrid(r, c) {
@@ -127,13 +153,13 @@ function initGrid() {
 
 function play() {
     spawnRandomPiece();
-    console.log(active);
-    // while(active.isFalling && active.isActive){
-    //     setInterval(fallingPiece(), 500);
-    // }
+    if(active.isFalling && active.isActive){
+        setInterval(fallingPiece(), 500);
+    }
 }
 
 function setup() {
     initGrid();
     play();
+    drawBoardState();
 }
