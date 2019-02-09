@@ -17,6 +17,10 @@ var speed; //piece fall speed
 var active; //active piece
 var next; //next active piece
 var spawn = { r: 0, c: 5 }; //row,col
+var right = { r: 0, c: 1 };
+var left = { r: 0, c: -1 };
+var down = { r: 1, c: 0 };
+var pivot = spawn; //pivot of active piece
 
 //row, col
 var OPiece = [
@@ -70,11 +74,113 @@ class Piece {
     constructor(piece, o, location, color) {
         this.type = piece;
         this.orientation = o; //int
-        this.location = location;
+        this.location = location; //array of [r,c]
         this.color = color; //int
-        this.isFalling = true;
         this.isActive = true;
     }
+}
+
+addEventListener('keydown', function (event) {
+    switch (event.key) {
+        case 'ArrowUp':
+            tryRotate();
+            break;
+        case 'ArrowDown':
+            if (canMove(down)) {
+                move(down);
+            }
+            break;
+
+        case 'ArrowLeft':
+            if (canMove(left)) {
+                move(left);
+            }
+            break;
+
+        case 'ArrowRight':
+            if (canMove(right)) {
+                move(right);
+            }
+            break;
+    }
+});
+
+function setLocation(piece){
+    var r, c;
+    
+    for(var i = 0; i < piece.length; i++){
+        r = piece[i][0];
+        c = piece[i][1];
+        active.location[i][0] = r + pivot.r;
+        active.location[i][1] = c + pivot.c;
+    }
+    console.log(active.location);
+    
+}
+
+function checkEmpty(piece){
+    var isEmpty = true;
+    var r,c;
+    for (var i = 0; i < piece.length; i++) {
+        r = piece[i][0];
+        c = piece[i][1];
+        if(grid[r][c] !== EMPTY){
+            isEmpty = false;
+        }
+    }
+    console.log(isEmpty);
+    return isEmpty;
+}
+
+function tryRotate(){
+    //O actives cannot rotate
+    if(active.type === OPiece){
+        // console.log(active.type);
+        return false;
+    }
+    var temp = active;
+    for (var i = 0; i < active.location.length; i++) {
+        r = active.location[i][0];
+        c = active.location[i][1];
+        removeSquare(r, c);
+    }
+    //compute rotation
+    if(active.orientation + 1 < active.type.length){
+        active.orientation += 1;
+    }
+    else{
+        active.orientation = 0;
+    }
+    console.log(active.location);
+    //console.log(active.type[active.orientation]);
+    setLocation(active.type[active.orientation]);
+    if(checkEmpty(active.location)){
+        for (var i = 0; i < active.location.length; i++) {
+            // console.log(active.location[i]);
+            mapSquare(active.location[i], active.color);
+        }
+        // console.log("after");
+        // console.log(active.location);
+        drawBoardState();
+        return true;
+    }
+    else{
+        active = temp;
+        for (var i = 0; i < active.location.length; i++) {
+            mapSquare(active.location[i], active.color);
+        }
+        drawBoardState();
+    }
+    return false;
+}
+
+function canMove(direction){
+    console.log("canmove");
+    return true;
+}
+
+function move(direction){
+    console.log("move");
 }
 
 function spawnRandomPiece() {
@@ -83,6 +189,7 @@ function spawnRandomPiece() {
     var o = Math.floor(Math.random() * type.length); //orientation
     var p = type[o];
     var location = [];
+    pivot = spawn;
     for (var i = 0; i < p.length; i++) {
         location[i] = new Array(2);
         location[i][0] = p[i][0] + spawn.r; //compute row location
@@ -125,13 +232,14 @@ function drawSquare(r, c, ) {
 
 function drop() {
     //temporary conditions
-    if (active.isActive && active.location[0][0] < 21) {
+    if (active.isActive && pivot.r < 19) {
         var r, c;
         for (var i = 0; i < active.location.length; i++) {
             r = active.location[i][0];
             c = active.location[i][1];
             removeSquare(r, c);
             active.location[i][0] += 1;
+            pivot.r++;
         }
         for (var i = 0; i < active.location.length; i++) {
             mapSquare(active.location[i], active.color);
@@ -151,10 +259,6 @@ function removeSquare(r, c) {
     g.strokeStyle = "white";
     g.strokeRect(c * SQUARE_SIZE, r * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
     grid[r][c] = -1;
-}
-
-function collision(){
-
 }
 
 function drawGrid(r, c) {
@@ -186,7 +290,7 @@ function play() {
     spawnRandomPiece();
     drawBoardState();
 
-    setInterval(drop,100);
+    // setInterval(drop, 1000);
 }
 
 function setup() {
