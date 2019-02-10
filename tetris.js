@@ -1,22 +1,22 @@
 var canvas = document.getElementById("canvas"); //current view
 
-var GRID_WIDTH = 400;
-var GRID_HEIGHT = 800;
+var GRID_WIDTH = 480;
+var GRID_HEIGHT = 840;
 canvas.width = GRID_WIDTH;
 canvas.height = GRID_HEIGHT;
 
 var g = canvas.getContext("2d");
 
 var EMPTY = -1; //empty square
-var COLS = 10; //number of columns
-var ROWS = 20; //number of rows
-var BUFFER = 10; //invisible grid
+var BORDER = -9999; //border
+var COLS = 12; //number of columns
+var ROWS = 21; //number of rows
 var SQUARE_SIZE = 40;
 var grid = []; //grid array
 var speed; //piece fall speed
 var active; //active piece
 var next; //next active piece
-var spawn = { r: 0, c: 5 }; //row,col
+var spawn = { r: 0, c: 6 }; //row,col
 var right = { r: 0, c: 1 };
 var left = { r: 0, c: -1 };
 var down = { r: 1, c: 0 };
@@ -28,7 +28,7 @@ var OPiece = [
 ]
 
 var IPiece = [
-    [[0, -2], [0, -1], [0, 0], [0, 1]],
+    [[1, -2], [1, -1], [1, 0], [1, 1]],
     [[0, 0], [1, 0], [2, 0], [3, 0]]
 ]
 
@@ -86,21 +86,15 @@ addEventListener('keydown', function (event) {
             tryRotate();
             break;
         case 'ArrowDown':
-            if (canMove(down)) {
-                move(down);
-            }
+            tryMove(down);
             break;
 
         case 'ArrowLeft':
-            if (canMove(left)) {
-                move(left);
-            }
+            tryMove(left);
             break;
 
         case 'ArrowRight':
-            if (canMove(right)) {
-                move(right);
-            }
+            tryMove(right);
             break;
     }
 });
@@ -114,8 +108,6 @@ function setLocation(piece){
         active.location[i][0] = r + pivot.r;
         active.location[i][1] = c + pivot.c;
     }
-    console.log(active.location);
-    
 }
 
 function checkEmpty(piece){
@@ -124,11 +116,11 @@ function checkEmpty(piece){
     for (var i = 0; i < piece.length; i++) {
         r = piece[i][0];
         c = piece[i][1];
-        if(grid[r][c] !== EMPTY){
+        if(grid[r][c] === BORDER || grid[r][c] !== EMPTY){
             isEmpty = false;
         }
     }
-    console.log(isEmpty);
+    console.log("isEmpty = " + isEmpty);
     return isEmpty;
 }
 
@@ -138,49 +130,60 @@ function tryRotate(){
         // console.log(active.type);
         return false;
     }
-    var temp = active;
+    var newOrientation = active.orientation + 1;
+    undrawActive();
+    //compute rotation
+    if(newOrientation >= active.type.length){
+        newOrientation = 0;
+    }
+    setLocation(active.type[newOrientation]);
+    if(!checkEmpty(active.location)){
+        setLocation(active.type[active.orientation]);
+    }
+    else{
+        active.orientation = newOrientation;
+    }
+    console.log(newOrientation);
+    console.log(active.location);
+    mapPiece();
+    drawBoardState();
+    return false;
+}
+
+function undrawActive(){
     for (var i = 0; i < active.location.length; i++) {
         r = active.location[i][0];
         c = active.location[i][1];
         removeSquare(r, c);
     }
-    //compute rotation
-    if(active.orientation + 1 < active.type.length){
-        active.orientation += 1;
-    }
-    else{
-        active.orientation = 0;
-    }
-    console.log(active.location);
-    //console.log(active.type[active.orientation]);
-    setLocation(active.type[active.orientation]);
-    if(checkEmpty(active.location)){
-        for (var i = 0; i < active.location.length; i++) {
-            // console.log(active.location[i]);
-            mapSquare(active.location[i], active.color);
-        }
-        // console.log("after");
-        // console.log(active.location);
-        drawBoardState();
-        return true;
-    }
-    else{
-        active = temp;
-        for (var i = 0; i < active.location.length; i++) {
-            mapSquare(active.location[i], active.color);
-        }
-        drawBoardState();
-    }
-    return false;
 }
 
-function canMove(direction){
-    console.log("canmove");
-    return true;
-}
-
-function move(direction){
-    console.log("move");
+function tryMove(direction){
+    console.log("tryMove");
+    var r,c;
+    var canMove = true;
+    undrawActive();
+    for(var i = 0; i < active.location.length; i++){
+        //add direction to location
+        r = active.location[i][0];
+        c = active.location[i][1];
+        r += direction.r;
+        c += direction.c;
+        if(grid[r][c] !== EMPTY || grid[r][c] === BORDER){
+            canMove = false;
+        }
+    }
+    if(canMove){
+        for(var i = 0; i < active.location.length; i++){
+            active.location[i][0] += direction.r;
+            active.location[i][1] += direction.c;
+        }
+        pivot.r += direction.r;
+        pivot.c += direction.c;
+    }
+    console.log(grid);
+    mapPiece();
+    drawBoardState();
 }
 
 function spawnRandomPiece() {
@@ -207,6 +210,12 @@ function drawPiece(piece) {
     }
 }
 
+function mapPiece(){
+    for(var i = 0; i < active.location.length; i++){
+        mapSquare(active.location[i], active.color);
+    }
+}
+
 //loc = [row,col] array index
 function mapSquare(loc, color) {
     grid[loc[0]][loc[1]] = color;
@@ -214,7 +223,7 @@ function mapSquare(loc, color) {
 
 function drawBoardState() {
     for (var r = 0; r < ROWS; r++) {
-        for (var c = 0; c < COLS; c++) {
+        for (var c = 1; c < COLS; c++) {
             if (grid[r][c] >= 0) {
                 drawSquare(r, c);
             }
@@ -240,6 +249,7 @@ function drop() {
             removeSquare(r, c);
             active.location[i][0] += 1;
             pivot.r++;
+            
         }
         for (var i = 0; i < active.location.length; i++) {
             mapSquare(active.location[i], active.color);
@@ -270,14 +280,16 @@ function drawGrid(r, c) {
 
 function initGrid() {
     //init grid array
-    for (var row = 0; row < ROWS + BUFFER; row++) {
-        grid[row] = new Array(COLS);
-    }
-
     for (var r = 0; r < ROWS; r++) {
+        grid[r] = new Array(COLS);
         for (var c = 0; c < COLS; c++) {
             grid[r][c] = EMPTY;
-            drawGrid(r, c);
+            if(r === ROWS - 1 || c === 0 || c === COLS -1){
+                grid[r][c] = BORDER;
+            }
+            else{
+                drawGrid(r, c);
+            }
         }
     }
 }
