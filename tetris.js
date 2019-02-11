@@ -8,19 +8,21 @@ canvas.height = GRID_HEIGHT;
 var g = canvas.getContext("2d");
 
 var EMPTY = -1; //empty square
-var BORDER = -9999; //border
+var BORDER = -9; //border
 var COLS = 12; //number of columns
 var ROWS = 21; //number of rows
 var SQUARE_SIZE = 40;
 var grid = []; //grid array
-var speed; //piece fall speed
+var speed = 500; //piece fall speed
 var active; //active piece
+var nextActive; //next piece
 var next; //next active piece
-var spawn = { r: 0, c: 6 }; //row,col
+var spawnRow = 0;
+var spawnCol = 6;
 var right = { r: 0, c: 1 };
 var left = { r: 0, c: -1 };
 var down = { r: 1, c: 0 };
-var pivot = spawn; //pivot of active piece
+var paused = false;
 
 //row, col
 var OPiece = [
@@ -76,8 +78,19 @@ class Piece {
         this.orientation = o; //int
         this.location = location; //array of [r,c]
         this.color = color; //int
+        this.pivot = { r: spawnRow, c: spawnCol }; //spawn
         this.isActive = true;
     }
+}
+
+function pause(){
+    if(paused){
+        paused = false;  
+    }
+    else{
+        paused = true;
+    }
+    alert("Paused");
 }
 
 addEventListener('keydown', function (event) {
@@ -88,69 +101,76 @@ addEventListener('keydown', function (event) {
         case 'ArrowDown':
             tryMove(down);
             break;
-
         case 'ArrowLeft':
             tryMove(left);
             break;
-
         case 'ArrowRight':
             tryMove(right);
+            break;
+        case 'p':
+            //used mostly for testing
+            pause();
+            break;
+        case 'r':
+            restart();
+            break;
+        case ' ':
+            while(tryMove(down)){
+                //drop piece until it hits something
+            }
+            break;
+        case 'q':
+            gameOver();
             break;
     }
 });
 
-function setLocation(piece){
-    var r, c;
-    
-    for(var i = 0; i < piece.length; i++){
-        r = piece[i][0];
-        c = piece[i][1];
-        active.location[i][0] = r + pivot.r;
-        active.location[i][1] = c + pivot.c;
+
+
+function setLocation(piece) {
+    for (var i = 0; i < piece.length; i++) {
+        active.location[i][0] = piece[i][0] + active.pivot.r;
+        active.location[i][1] = piece[i][1] + active.pivot.c;
     }
 }
 
-function checkEmpty(piece){
+function checkEmpty(piece) {
     var isEmpty = true;
-    var r,c;
+    var r, c;
     for (var i = 0; i < piece.length; i++) {
         r = piece[i][0];
         c = piece[i][1];
-        if(grid[r][c] === BORDER || grid[r][c] !== EMPTY){
+        if (grid[r][c] === BORDER || grid[r][c] !== EMPTY) {
             isEmpty = false;
         }
     }
-    console.log("isEmpty = " + isEmpty);
     return isEmpty;
 }
 
-function tryRotate(){
-    //O actives cannot rotate
-    if(active.type === OPiece){
-        // console.log(active.type);
+function tryRotate() {
+    //O type pieces cannot rotate
+    if (active.type === OPiece) {
         return false;
     }
     var newOrientation = active.orientation + 1;
     undrawActive();
     //compute rotation
-    if(newOrientation >= active.type.length){
+    if (newOrientation >= active.type.length) {
         newOrientation = 0;
     }
     setLocation(active.type[newOrientation]);
-    if(!checkEmpty(active.location)){
+    if (!checkEmpty(active.location)) {
         setLocation(active.type[active.orientation]);
     }
-    else{
+    else {
         active.orientation = newOrientation;
     }
-    console.log(newOrientation);
-    console.log(active.location);
     mapPiece();
     drawBoardState();
     return false;
 }
 
-function undrawActive(){
+function undrawActive() {
     for (var i = 0; i < active.location.length; i++) {
         r = active.location[i][0];
         c = active.location[i][1];
@@ -158,50 +178,54 @@ function undrawActive(){
     }
 }
 
-function tryMove(direction){
-    console.log("tryMove");
-    var r,c;
+function tryMove(direction) {
+    var r, c;
     var canMove = true;
     undrawActive();
-    for(var i = 0; i < active.location.length; i++){
+    for (var i = 0; i < active.location.length; i++) {
         //add direction to location
         r = active.location[i][0];
         c = active.location[i][1];
         r += direction.r;
         c += direction.c;
-        if(grid[r][c] !== EMPTY || grid[r][c] === BORDER){
+        if (grid[r][c] !== EMPTY || grid[r][c] === BORDER) {
             canMove = false;
         }
     }
-    if(canMove){
-        for(var i = 0; i < active.location.length; i++){
+    if (canMove) {
+        for (var i = 0; i < active.location.length; i++) {
             active.location[i][0] += direction.r;
             active.location[i][1] += direction.c;
         }
-        pivot.r += direction.r;
-        pivot.c += direction.c;
+        active.pivot.r += direction.r;
+        active.pivot.c += direction.c;
     }
-    console.log(grid);
     mapPiece();
     drawBoardState();
+    return canMove;
 }
 
-function spawnRandomPiece() {
+function getRandom() {
     var rand = Math.floor(Math.random() * (pieces.length));
     var type = pieces[rand]; //piece type
     var o = Math.floor(Math.random() * type.length); //orientation
     var p = type[o];
     var location = [];
-    pivot = spawn;
     for (var i = 0; i < p.length; i++) {
         location[i] = new Array(2);
-        location[i][0] = p[i][0] + spawn.r; //compute row location
-        location[i][1] = p[i][1] + spawn.c; //compute col location
+        location[i][0] = p[i][0] + spawnRow; //compute row location
+        location[i][1] = p[i][1] + spawnCol; //compute col location
     }
-    var rp = new Piece(type, o, location, rand); //random piece
-    active = rp;
-    //var col = Math.floor(Math.random() * COLS);
-    drawPiece(rp); //spawn base orientation of a random piece at start location
+    return new Piece(type, o, location, rand); //random piece
+}
+
+function spawnRandomPiece() {
+    active = nextActive;
+    nextActive = getRandom();
+    if (active == null) {
+        active = getRandom();
+    }
+    drawPiece(active);
 }
 
 function drawPiece(piece) {
@@ -210,8 +234,8 @@ function drawPiece(piece) {
     }
 }
 
-function mapPiece(){
-    for(var i = 0; i < active.location.length; i++){
+function mapPiece() {
+    for (var i = 0; i < active.location.length; i++) {
         mapSquare(active.location[i], active.color);
     }
 }
@@ -238,37 +262,72 @@ function drawSquare(r, c, ) {
     g.strokeRect(c * SQUARE_SIZE, r * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
 }
 
+function pieceLanded() {
+    if(active.pivot.r < 2 && active.isActive == false) {
+        setTimeout(gameOver,100);
+    }
+    removeLines();
+    setTimeout(spawnRandomPiece,100);
+}
+
+function removeLines(){
+    for(var r = 0; r < ROWS - 1; r++){
+        for(var c = 1; c < COLS - 1; c++){
+            if(grid[r][c] === EMPTY){
+                break;
+            }
+            if(c === COLS - 2){
+                removeLine(r);
+            }
+        }
+    }
+}
+
+function removeLine(row){
+    for(var c = 1; c < COLS - 1; c++){
+        removeSquare(row,c);
+    }
+    for(var c = 1; c < COLS - 1; c++){
+        for(var r = row; r > 0; r--){
+            grid[r][c] = grid[r-1][c];
+            removeSquare(r-1,c);
+            drawBoardState();
+        }
+    }
+}
+
+function restart(){
+    document.location.reload();
+}
+
+function gameOver() {
+    clear();
+    alert("Game Over");
+    setTimeout(restart,100);
+}
+
+function clear() {
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    active = null;
+    nextActive = null;
+}
 
 function drop() {
-    //temporary conditions
-    if (active.isActive && pivot.r < 19) {
-        var r, c;
-        for (var i = 0; i < active.location.length; i++) {
-            r = active.location[i][0];
-            c = active.location[i][1];
-            removeSquare(r, c);
-            active.location[i][0] += 1;
-            pivot.r++;
-            
-        }
-        for (var i = 0; i < active.location.length; i++) {
-            mapSquare(active.location[i], active.color);
-        }
-        drawBoardState();
+    if (tryMove(down) == false) {
+        active.isActive = false;
+        pieceLanded();
     }
-    else {
-        spawnRandomPiece();
-        drawBoardState();
-    }
-
 }
 
 function removeSquare(r, c) {
+    if(grid[r][c] === EMPTY || grid[r][c] ===  BORDER){
+        return;
+    }
     g.fillStyle = "black";
     g.fillRect(c * SQUARE_SIZE, r * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
     g.strokeStyle = "white";
     g.strokeRect(c * SQUARE_SIZE, r * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
-    grid[r][c] = -1;
+    grid[r][c] = EMPTY;
 }
 
 function drawGrid(r, c) {
@@ -284,10 +343,10 @@ function initGrid() {
         grid[r] = new Array(COLS);
         for (var c = 0; c < COLS; c++) {
             grid[r][c] = EMPTY;
-            if(r === ROWS - 1 || c === 0 || c === COLS -1){
+            if (r === ROWS - 1 || c === 0 || c === COLS - 1) {
                 grid[r][c] = BORDER;
             }
-            else{
+            else {
                 drawGrid(r, c);
             }
         }
@@ -295,17 +354,9 @@ function initGrid() {
 }
 
 function play() {
-    g.clearRect(0, 0, canvas.width, canvas.height);
-
+    clear();
     initGrid();
-
     spawnRandomPiece();
     drawBoardState();
-
-    // setInterval(drop, 1000);
+    setInterval(drop, speed); //auto drop each active piece
 }
-
-function setup() {
-    play();
-}
-
