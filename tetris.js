@@ -1,6 +1,6 @@
 var canvas = document.getElementById("canvas"); //current view
 
-var GRID_WIDTH = 480;
+var GRID_WIDTH = 780;
 var GRID_HEIGHT = 840;
 canvas.width = GRID_WIDTH;
 canvas.height = GRID_HEIGHT;
@@ -16,7 +16,8 @@ var grid = []; //grid array
 var speed = 500; //piece fall speed
 var active; //active piece
 var nextActive; //next piece
-var next; //next active piece
+var nextX = 600;
+var nextY = 100;
 var spawnRow = 0;
 var spawnCol = 6;
 var right = { r: 0, c: 1 };
@@ -226,6 +227,7 @@ function spawnRandomPiece() {
         active = getRandom();
     }
     drawPiece(active);
+    displayNext(nextActive.type[nextActive.orientation]);
 }
 
 function drawPiece(piece) {
@@ -245,6 +247,14 @@ function mapSquare(loc, color) {
     grid[loc[0]][loc[1]] = color;
 }
 
+function displayNext(piece){
+    g.clearRect(canvas.width - 300 , 0, canvas.width, canvas.height);
+    g.fillStyle = colors[nextActive.color];
+    for(var i = 0; i < piece.length; i++){
+        g.fillRect((piece[i][1] * SQUARE_SIZE) + nextX ,  (piece[i][0] * SQUARE_SIZE) + nextY , SQUARE_SIZE, SQUARE_SIZE);
+    }
+}
+
 function drawBoardState() {
     for (var r = 0; r < ROWS; r++) {
         for (var c = 1; c < COLS; c++) {
@@ -255,7 +265,7 @@ function drawBoardState() {
     }
 }
 
-function drawSquare(r, c, ) {
+function drawSquare(r, c) {
     g.fillStyle = colors[grid[r][c]];
     g.fillRect(c * SQUARE_SIZE, r * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
     g.strokeStyle = "white";
@@ -263,7 +273,7 @@ function drawSquare(r, c, ) {
 }
 
 function pieceLanded() {
-    if(active.pivot.r < 2 && active.isActive == false) {
+    if(active.pivot.r < 1 && active.isActive == false) {
         setTimeout(gameOver,100);
     }
     removeLines();
